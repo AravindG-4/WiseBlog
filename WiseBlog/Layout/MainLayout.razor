@@ -1,0 +1,49 @@
+﻿@inherits LayoutComponentBase
+@inject SupabaseService supabaseService
+@inject IJSRuntime _jsRuntime
+@inject NavigationManager Nav
+@inject AuthenticationStateProvider Auth
+<MudThemeProvider />
+<MudDialogProvider />
+<MudSnackbarProvider />
+<MudPopoverProvider />
+<div class="page">
+    <div class="sidebar">
+        <NavMenu />
+    </div>
+
+    <main>
+        <div class="top-row px-4">
+            <AuthorizeView>
+                <Authorized>
+                    <MudButton Variant="Variant.Outlined" Color="Color.Primary" OnClick="@Logout">Logout</MudButton>
+                </Authorized>
+                <NotAuthorized>
+                    <NavLink class="nav-link" href="/login" Match="NavLinkMatch.All">
+                        <MudButton Variant="Variant.Outlined" Color="Color.Primary">Login</MudButton>
+                    </NavLink>
+                    <NavLink class="nav-link" href="/register" Match="NavLinkMatch.All">
+                        <MudButton Variant="Variant.Outlined" Color="Color.Primary">Register</MudButton>
+                    </NavLink>
+                </NotAuthorized>
+            </AuthorizeView>
+            
+        </div>
+
+        <article class="content px-4">
+            @Body
+        </article>
+    </main>
+</div>
+
+@code{
+    public async Task Logout()
+    {
+        Console.WriteLine("Logging out");
+        await _jsRuntime.InvokeVoidAsync("CookieRemover.Delete", "auth_token");
+        await supabaseService.LogoutAsync();
+        Console.WriteLine("Logged out");
+        ((AuthenticationProvider)Auth).SetUser(null);
+        Nav.NavigateTo("/login", forceLoad: true);
+    }
+}
