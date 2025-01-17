@@ -10,7 +10,6 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{55798497-CB6E-47BA-A004-ED6F9CE64207}"
 	ProjectSection(SolutionItems) = preProject
 		.gitignore = .gitignore
-		appsettings.json = appsettings.json
 		README.md = README.md
 	EndProjectSection
 EndProject

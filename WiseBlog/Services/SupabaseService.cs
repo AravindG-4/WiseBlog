@@ -13,13 +13,13 @@ namespace WiseBlog.Services
         //UserContext _userContext;
         //AuthenticationStateProvider Auth;
         public SupabaseService(Supabase.Client supabase, IJSRuntime jsRuntime)
-        { 
+        {
             _supabaseClient = supabase;
             _jsRuntime = jsRuntime;
             //_userContext = userContext;
             //Auth = auth;
         }
-        public async Task<bool> RegisterUser(string email, string password, string username)
+        public async Task<string?> RegisterUser(string email, string password, string username)
         {
             Console.WriteLine("Hitting Register User");
             var response = await _supabaseClient.Auth.SignUp(email, password);
@@ -37,11 +37,11 @@ namespace WiseBlog.Services
                 Console.WriteLine("ID is not null");
                 var newUser = new User
                 {
-                    id = temp_id, 
+                    id = temp_id,
                     email = email,
                     name = username,
                     role = "user",
-                    created_at = DateTime.UtcNow 
+                    created_at = DateTime.UtcNow
 
                 };
 
@@ -57,16 +57,16 @@ namespace WiseBlog.Services
                 if (insertResponse != null)
                 {
                     Console.WriteLine("User Inserted Successfully");
-                    return true;
+                    return (newUser.id).ToString();
                 }
                 else
                 {
                     Console.WriteLine("Failed to Insert User");
-                    return false;
+                    return null;
                 }
             }
 
-            return false; 
+            return null;
 
         }
 
@@ -102,11 +102,12 @@ namespace WiseBlog.Services
                 }
                 return null;
             }
-            catch (Exception ex) {
+            catch (Exception ex)
+            {
                 Console.WriteLine("Error: " + ex.Message);
                 return null;
             }
-            }      
+        }
 
         public async Task LogoutAsync()
         {

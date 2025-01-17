@@ -28,7 +28,7 @@ var supabaseKey = secrets.GetSUPABASEKEY();
 var supabaseClient = new Supabase.Client(supabaseUrl, supabaseKey, supabaseOptions);
 
 builder.Services.AddSingleton(supabaseClient);
-//builder.Services.AddSingleton<MongoDBServices>();
+builder.Services.AddSingleton<MongoDBService>();
 builder.Services.AddSingleton<SupabaseService>();
 builder.Services.AddSingleton<UserContext>();
 builder.Services.AddSingleton<AuthenticationStateProvider, AuthenticationProvider>();

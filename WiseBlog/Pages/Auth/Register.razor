@@ -8,10 +8,10 @@
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @using System.Security.Claims
 @inject IJSRuntime _jsRuntime
-@inject NavigationManager Nav
 @inject AuthenticationStateProvider Auth
+@* @inject MongoDBService MongoService *@
 
-<MudContainer MaxWidth="MaxWidth.Small" Class="mt-16">
+<MudContainer MaxWidth="MaxWidth.Small" Class="pt-lg-5 mt-20">
     <MudCard>
         <MudCardHeader>
             <MudText Typo="Typo.h5">Register</MudText>
@@ -21,23 +21,37 @@
                 <MudTextField @bind-Value="username" Label="Username" Required="true"
                               RequiredError="Username is required!" />
                 <MudTextField @bind-Value="email" Label="Email" Required="true"
-                              RequiredError="Email is required!"
-                              InputType="InputType.Email" />
+                              RequiredError="Email is required!" InputType="InputType.Email" />
                 <MudTextField @bind-Value="password" Label="Password" Required="true"
-                              RequiredError="Password is required!"
-                              InputType="InputType.Password" />
+                              RequiredError="Password is required!" InputType="InputType.Password" />
                 <MudTextField @bind-Value="confirmPassword" Label="Confirm Password" Required="true"
-                              RequiredError="Password confirmation is required!"
-                              InputType="InputType.Password" />
+                              RequiredError="Password confirmation is required!" InputType="InputType.Password" />
+
+                <!-- New fields for Bio and Profile Image -->
+                <MudTextField @bind-Value="bio" Label="Bio" Required="true"
+                              RequiredError="Bio is required!" Multiline="true" Lines="3" MaxLines="5" />
+
+                <MudFileUpload T="IBrowserFile" FilesChanged="UploadFiles" MaximumFileCount="1" Required="true" RequiredError="Upload Profile Image">
+                    <ActivatorContent>
+                        <MudButton class="mt-3" Variant="Variant.Outlined" Color="Color.Primary" StartIcon="@Icons.Material.Filled.CloudUpload">
+                            Upload Profile Image
+                        </MudButton>
+                    </ActivatorContent>
+                </MudFileUpload>
+                <MudText Class="ml-5">@file?.Name</MudText>
+
+
             </MudForm>
         </MudCardContent>
         <MudCardActions>
+            <MudButton Variant="Variant.Text" OnClick="@NavigateToLogin" Color="Color.Secondary">
+                Sigin?
+            </MudButton>
             <MudButton ButtonType="ButtonType.Button" Variant="Variant.Filled" Color="Color.Primary"
                        Class="ml-auto" OnClick="HandleRegister" Disabled="@(isLoading)">Register</MudButton>
         </MudCardActions>
     </MudCard>
 </MudContainer>
-
 @code {
     private bool isLoading = false;
 
@@ -47,6 +61,36 @@
     string email = string.Empty;
     string password = string.Empty;
     string confirmPassword = string.Empty;
+
+    // New fields for Bio and Profile Image
+    string bio = string.Empty;
+    private byte[] image;
+    IBrowserFile? file = null;
+
+    private async Task UploadFiles(IBrowserFile _file)
+    {
+        const long MaxFileSize = 2 * 1024 * 1024; // 2 MB in bytes
+
+        if (_file.Size > MaxFileSize)
+        {
+            Snackbar.Add("File size exceeds 2 MB. Please upload a smaller file.", Severity.Error);
+            return;
+        }
+
+        file = _file;
+        Console.WriteLine($"Uploaded file name: {file.Name}");
+        using (var stream = new MemoryStream())
+        {
+            await file.OpenReadStream(maxAllowedSize: MaxFileSize).CopyToAsync(stream); // 10 MB limit
+            image = stream.ToArray();
+        }
+        Snackbar.Add("File uploaded successfully!", Severity.Success);
+    }
+
+    void NavigateToLogin()
+    {
+        NavigationManager.NavigateTo("/login");
+    }
 
     private async Task HandleRegister()
     {
@@ -59,7 +103,10 @@
         try
         {
             var RegisterResult = await supabaseService.RegisterUser(email, password, username);
-            Console.WriteLine("RegisterResult: " + RegisterResult);
+            Console.WriteLine("Supabase Register: " + RegisterResult);
+
+            // MongoService.RegisterProfile(RegisterResult, bio, image);
+
             Snackbar.Add("Registration successful!", Severity.Success);
             NavigationManager.NavigateTo("/login");
         }

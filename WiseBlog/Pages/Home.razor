@@ -3,17 +3,27 @@
 @inject AuthenticationStateProvider Auth
 
 <PageTitle>Home</PageTitle>
-<h1>Hello, world!</h1>
 <AuthorizeView>
     <Authorized>
-        <p>Hello, @authuser.name !</p>
+    <div class="container text-center d-flex flex-column justify-content-center align-items-center" style="height: 100vh;">
+        <p class="pt-lg-5">Hello, @authuser.name !</p> 
+    </div>
     </Authorized>
     <NotAuthorized>
-        <p>You're not authenticated</p>
+    <div class="container text-center d-flex flex-column justify-content-center align-items-center" style="height: 100vh;">
+        <h1 class="display-1 fw-bold" style="font-size: 4rem;">Wise Blog & ideas</h1>
+        <p class="lead mt-3" style="font-size: 1.5rem;">A place to read and write your stories</p>
+        <p>Welcome to the app.</p>
+        <NavLink class="mt-3 nav-link" href="/login" Match="NavLinkMatch.All">
+            <MudButton Variant="Variant.Outlined" Style="border-radius: 50px; color: white; background-color: black;">
+                Start Reading!
+            </MudButton>
+
+            </NavLink>
+    </div>
     </NotAuthorized>
 </AuthorizeView>
 
-Welcome to your new app.
 
 @code {
     User? authuser;

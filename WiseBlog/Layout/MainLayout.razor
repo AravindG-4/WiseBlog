@@ -7,36 +7,85 @@
 <MudDialogProvider />
 <MudSnackbarProvider />
 <MudPopoverProvider />
-<div class="page">
-    <div class="sidebar">
-        <NavMenu />
-    </div>
+@* <div class="page"> *@
+@*     <div class="sidebar"> *@
+@*         <NavMenu /> *@
+@*     </div> *@
 
-    <main>
-        <div class="top-row px-4">
+<main>
+    <MudLayout>
+        <MudAppBar Elevation="1" Style="background-color: #263238;">
+
+            <MudText onclick="@NavTo" Typo="Typo.h5" Class="ml-3" Style="color: white; display: flex; align-items: center; cursor:pointer;">
+                <MudIcon Class="mr-1" Icon="@Icons.Custom.Brands.MudBlazor" />
+                WiseBlog
+            </MudText>
+
+            <MudSpacer />
+
+
             <AuthorizeView>
                 <Authorized>
-                    <MudButton Variant="Variant.Outlined" Color="Color.Primary" OnClick="@Logout">Logout</MudButton>
+                    <div class="dropdown mr-5">
+                        <button class="btn rounded-circle"
+                                type="button"
+                                id="dropdownMenuButton"
+                                data-bs-toggle="dropdown"
+                                aria-expanded="false"
+                                onclick="@GetUser">
+                            <MudIcon Icon="@Icons.Material.Rounded.AccountCircle" Color="Color.Info" Size="Size.Large" />
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu" aria-labelledby="dropdownMenuButton">
+                            <li class="dropdown-item">
+                                <strong>Name: </strong>@authuser?.name
+                            </li>
+                            <li class="dropdown-item">
+                                <strong>Email: </strong>@authuser?.email
+                            </li>
+                            <li class="dropdown-item">
+                                <strong>Role: </strong>@authuser?.role
+                            </li>
+                            <li>
+                                <MudButton Class="mt-1 ml-4" Variant="Variant.Outlined" Color="Color.Primary" OnClick="@Logout">Logout</MudButton>
+                            </li>
+                        </ul>
+                    </div>
                 </Authorized>
+
                 <NotAuthorized>
                     <NavLink class="nav-link" href="/login" Match="NavLinkMatch.All">
-                        <MudButton Variant="Variant.Outlined" Color="Color.Primary">Login</MudButton>
-                    </NavLink>
-                    <NavLink class="nav-link" href="/register" Match="NavLinkMatch.All">
-                        <MudButton Variant="Variant.Outlined" Color="Color.Primary">Register</MudButton>
+                        <MudButton Variant="Variant.Outlined" Style="border-radius: 50px; color: black; background-color: white;">
+                            Login
+                        </MudButton>
+
                     </NavLink>
                 </NotAuthorized>
+
             </AuthorizeView>
-            
-        </div>
 
-        <article class="content px-4">
-            @Body
-        </article>
-    </main>
-</div>
+        </MudAppBar>
 
-@code{
+    </MudLayout>
+
+    <article class="content px-4">
+        @Body
+    </article>
+</main>
+@* </div> *@
+
+@code {
+    User? authuser;
+
+    async void GetUser()
+    {
+        if (authuser == null)
+        {
+            Console.WriteLine("Hitting MainLayout");
+            authuser = ((AuthenticationProvider)Auth).User;
+            Console.WriteLine("Name: " + authuser.name);
+        }
+    }
+
     public async Task Logout()
     {
         Console.WriteLine("Logging out");
@@ -45,5 +94,14 @@
         Console.WriteLine("Logged out");
         ((AuthenticationProvider)Auth).SetUser(null);
         Nav.NavigateTo("/login", forceLoad: true);
+    }
+
+    private void NavTo()
+    {
+        Nav.NavigateTo("/");
+    }
+    private void NavToLogin()
+    {
+        Nav.NavigateTo("/login");
     }
 }
