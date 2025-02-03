@@ -13,10 +13,14 @@ namespace WiseBlog.Shared.Models
         [Required]
         [BsonElement("userID")]
         public string userId { get; set; }
-        
+
+        [Required]
+        [BsonElement("Name")]
+        public string name { get; set; }
+
         [Required]
         [BsonElement("Image")]
-        public byte[] image { get; set; }
+        public string image { get; set; }
 
         [Required]
         [BsonElement("Bio")]

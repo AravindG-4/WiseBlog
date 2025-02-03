@@ -19,7 +19,7 @@ namespace WiseBlog.Services
             //_userContext = userContext;
             //Auth = auth;
         }
-        public async Task<string?> RegisterUser(string email, string password, string username)
+        public async Task<(string? Id, string? Name)> RegisterUser(string email, string password, string username)
         {
             Console.WriteLine("Hitting Register User");
             var response = await _supabaseClient.Auth.SignUp(email, password);
@@ -57,16 +57,16 @@ namespace WiseBlog.Services
                 if (insertResponse != null)
                 {
                     Console.WriteLine("User Inserted Successfully");
-                    return (newUser.id).ToString();
+                    return ((newUser.id).ToString(), newUser.name);
                 }
                 else
                 {
                     Console.WriteLine("Failed to Insert User");
-                    return null;
+                    return (null, null);
                 }
             }
 
-            return null;
+            return (null, null);
 
         }
 

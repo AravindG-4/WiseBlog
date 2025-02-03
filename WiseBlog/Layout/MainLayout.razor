@@ -7,10 +7,6 @@
 <MudDialogProvider />
 <MudSnackbarProvider />
 <MudPopoverProvider />
-@* <div class="page"> *@
-@*     <div class="sidebar"> *@
-@*         <NavMenu /> *@
-@*     </div> *@
 
 <main>
     <MudLayout>
@@ -26,6 +22,11 @@
 
             <AuthorizeView>
                 <Authorized>
+                    <NavLink class="nav-link p-3" href="/write" Match="NavLinkMatch.All">
+                        <MudButton Variant="Variant.Outlined" Style="border-radius: 50px; color: black; background-color: white;">
+                            Write
+                        </MudButton>
+                        </NavLink>
                     <div class="dropdown mr-5">
                         <button class="btn rounded-circle"
                                 type="button"
@@ -36,6 +37,15 @@
                             <MudIcon Icon="@Icons.Material.Rounded.AccountCircle" Color="Color.Info" Size="Size.Large" />
                         </button>
                         <ul class="dropdown-menu dropdown-menu" aria-labelledby="dropdownMenuButton">
+                            <li class="dropdown-item no-highlight">
+                                <MudIcon Icon="@Icons.Material.Filled.AccountCircle" Color="Color.Dark" Size="Size.Large" />
+                                <MudButton Variant="Variant.Outlined" Color="Color.Primary" OnClick="@NavToProfile">Profile</MudButton>
+                            </li>
+
+                            <li>
+                                <hr class="dropdown-divider" />
+                            </li>
+
                             <li class="dropdown-item">
                                 <strong>Name: </strong>@authuser?.name
                             </li>
@@ -45,8 +55,15 @@
                             <li class="dropdown-item">
                                 <strong>Role: </strong>@authuser?.role
                             </li>
+
                             <li>
-                                <MudButton Class="mt-1 ml-4" Variant="Variant.Outlined" Color="Color.Primary" OnClick="@Logout">Logout</MudButton>
+                                <hr class="dropdown-divider" />
+                            </li>
+                            
+                            <li>
+                                <div class="d-flex justify-content-center">
+                                <MudButton Class="align-content-center" Variant="Variant.Outlined" Color="Color.Primary" OnClick="@Logout">Logout</MudButton>
+                                </div>
                             </li>
                         </ul>
                     </div>
@@ -71,10 +88,19 @@
         @Body
     </article>
 </main>
-@* </div> *@
+
+<style>
+    .no-highlight:focus,
+    .no-highlight:active {
+        background-color: transparent !important;
+        box-shadow: none !important;
+    }
+
+</style>
 
 @code {
     User? authuser;
+    string imageDataUrl = "";
 
     async void GetUser()
     {
@@ -103,5 +129,9 @@
     private void NavToLogin()
     {
         Nav.NavigateTo("/login");
+    }
+    private void NavToProfile()
+    {
+        Nav.NavigateTo($"/profile?id={authuser.id}");
     }
 }

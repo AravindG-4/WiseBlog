@@ -1,0 +1,166 @@
+﻿@page "/write"
+@attribute [CustomAuthorize("user")]
+@inject IJSRuntime JSRuntime
+@inject HttpClient Http
+@using System.Text.Json;
+@inject NavigationManager Navigation
+@implements IAsyncDisposable
+@inject ISnackbar Snackbar
+@inject AuthenticationStateProvider Auth
+
+
+<MudContainer MaxWidth="MaxWidth.Small" Class="pt-lg-5 mt-20">
+    <h1 class="mb-3">Write Your Blog</h1>
+
+    <!-- Title Input -->
+    <MudTextField @bind-Value="Title" Label="Blog Title" Variant="Variant.Outlined" Required="true" Class="mb-3" />
+
+    <!-- Description Input -->
+    <MudTextField @bind-Value="Description" Label="Short Description" Variant="Variant.Outlined" Required="true" Class="mb-3" />
+
+    <!-- Visibility Dropdown -->
+    <MudSelect T="string" Class="mt-1 mb-3" Style="flex-shrink: 0; width: 120px;" Variant="Variant.Outlined" Label="Visibility" ValueChanged="AddVisibility">
+        <MudSelectItem T="string" Value="@("Public")">Public</MudSelectItem>
+        <MudSelectItem T="string" Value="@("Private")">Private</MudSelectItem>
+        <MudSelectItem T="string" Value="@("Followers")">Followers</MudSelectItem>
+    </MudSelect>
+
+    <!-- Category Dropdown -->
+    @* <MudSelect @bind-Value="SelectedCategory" Label="Category" Variant="Variant.Outlined" Required="true" Class="mb-3"> *@
+        <MudSelect T="string" Class="mt-1 mb-3" Style="flex-shrink: 0; width: 120px;" Variant="Variant.Outlined" Label="Category" ValueChanged="AddCategory">
+        <MudSelectItem T="string" Value="@("Technology")">Technology</MudSelectItem>
+        <MudSelectItem T="string" Value="@("Lifestyle")">Lifestyle</MudSelectItem>
+        <MudSelectItem T="string" Value="@("HealthCare")">HealthCare</MudSelectItem>
+    </MudSelect>
+
+    <!-- Blog Content -->
+    <h3>Blog Content</h3>
+    <div id="editor" @ref="editorRef"></div>
+
+    <!-- Save Button -->
+    <MudButton Class="mt-3 mb-3" OnClick="SaveContent" Variant="Variant.Filled" Color="Color.Primary">Save Blog</MudButton>
+</MudContainer>
+
+
+
+@code {
+    private bool isLoading = false;
+
+    private ElementReference editorRef;
+    private IJSObjectReference? quillInstance;
+
+    private string Title = "";
+    private string Description = "";
+    private string content = "";
+    private string SelectedVisibility; // Default value
+    private string SelectedCategory; // Default value
+
+    string editorId = "editor";
+    bool quillInitialized = false;
+
+    User? authuser;
+
+    private async Task AddVisibility(string value)
+    {
+        SelectedVisibility = value;
+    }
+
+    private async Task AddCategory(string value)
+    {
+        SelectedCategory = value;
+    }
+
+    protected override void OnInitialized()
+    {
+        authuser = ((AuthenticationProvider)Auth).User;
+        Console.WriteLine($"User: {authuser.name}");
+        // Subscribe to navigation events
+        Navigation.LocationChanged += HandleLocationChanged;
+        base.OnInitialized();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && !quillInitialized)
+        {
+            quillInstance = await JSRuntime.InvokeAsync<IJSObjectReference>("initializeQuill", editorId);
+            quillInitialized = true;
+        }
+    }
+
+    private async void HandleLocationChanged(object sender, LocationChangedEventArgs e)
+    {
+        await InvokeAsync(async () =>
+        {
+            await CleanupQuill();
+            StateHasChanged();
+        });
+    }
+
+    private async Task CleanupQuill()
+    {
+        if (quillInitialized)
+        {
+            await JSRuntime.InvokeVoidAsync("destroyQuill", editorId);
+            quillInitialized = false;
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        // Unsubscribe from navigation events
+        Navigation.LocationChanged -= HandleLocationChanged;
+        await CleanupQuill();
+    }
+
+    private async Task SaveContent()
+    {
+        isLoading = true;
+
+        Snackbar.Add("Your Blog is storing, Please Wait...", Severity.Info, options =>
+            {
+                options.RequireInteraction = true; // Prevent auto-dismiss
+            });
+
+        if (quillInstance != null)
+        {
+            content = await JSRuntime.InvokeAsync<string>("getQuillContent", quillInstance);
+
+            if (string.IsNullOrWhiteSpace(Title))
+            {
+                Snackbar.Clear();
+                Snackbar.Add("Title cannot be Empty!", Severity.Error);
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(Description)){
+                Snackbar.Clear();
+                Snackbar.Add("Description cannot be Empty!", Severity.Error);
+                return;
+            }
+            if (string.IsNullOrWhiteSpace(content)){
+                Snackbar.Clear();
+                Snackbar.Add("Blog Content cannot be Empty!", Severity.Error);
+                return;
+            }
+
+            // using var contentStream = new MemoryStream(Encoding.UTF8.GetBytes(content));
+
+            var blogData = new
+            {
+                userId = authuser.id,
+                userName = authuser.name,
+                title = Title,
+                description = Description,
+                category = SelectedCategory,
+                visibility = SelectedVisibility
+            };
+
+            await JSRuntime.InvokeVoidAsync("uploadBlog", JsonSerializer.Serialize(blogData), content);
+            Snackbar.Clear();
+            Snackbar.Add("Your Blog will be posted shortly! Try Refresh!", Severity.Info);
+            isLoading = false;
+            Navigation.NavigateTo("/", replace:true);
+        }
+    }
+}

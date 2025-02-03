@@ -13,6 +13,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		README.md = README.md
 	EndProjectSection
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WiseBlog.API", "..\WiseBlog.API\WiseBlog.API.csproj", "{768CE54F-6248-415C-A353-08442F3C40FA}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -27,6 +29,10 @@ Global
 		{E01744DC-B19F-4089-9E22-6ABF77C23EC8}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E01744DC-B19F-4089-9E22-6ABF77C23EC8}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{E01744DC-B19F-4089-9E22-6ABF77C23EC8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{768CE54F-6248-415C-A353-08442F3C40FA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{768CE54F-6248-415C-A353-08442F3C40FA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{768CE54F-6248-415C-A353-08442F3C40FA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{768CE54F-6248-415C-A353-08442F3C40FA}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

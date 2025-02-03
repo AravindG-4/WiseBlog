@@ -21,7 +21,7 @@ namespace WiseBlog.Services
     class AuthenticationProvider : AuthenticationStateProvider
     {
         static private Secrets secrets { get; } = new Secrets();
-        public User? User { get; private set; } = new();
+        public User? User { get; private set; } = null;
 
         private readonly IJSRuntime _jsRuntime;
         //private readonly IConfiguration _configuration;

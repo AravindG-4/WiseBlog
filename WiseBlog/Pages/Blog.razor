@@ -1,0 +1,115 @@
+﻿@page "/blog/{blogId}"
+@inject HttpClient Http
+@inject NavigationManager Nav
+@inject AuthenticationStateProvider Auth
+@inject IJSRuntime JSRuntime
+<PageTitle>Blog</PageTitle>
+
+
+<MudContainer MaxWidth="MaxWidth.Medium" Class="pt-lg-5 mt-20">
+    @if (BlogResponse != null)
+    {
+
+        <h1 class="display-1 fw-bold" style="font-size: 3rem;">@BlogResponse.title</h1>
+        <p class="lead mt-3" style="font-size: 1.5rem;">@BlogResponse.description</p>
+
+        <div class="flex items-center space-x-3">
+            <img src="@imageDataUrl" alt="Author" class="profile-picture cursor-pointer" onclick="@NavToProfile">
+            <div>
+                <div class="d-flex align-items-center gap-4">
+                    <h3 class="text-lg-center font-semibold m-0 cursor-pointer" onclick="@NavToProfile">@BlogResponse.userName</h3>
+                    @if(AuthProfile.userId != BlogResponse.userId){
+                        <button id="Relation" class="@GetButtonClass()" onclick="@ToggleRelation">@RelationStatus</button>
+                    }
+                </div>
+                <p class="text-sm text-gray-500">Published on @BlogResponse.created_at.ToString("MMM dd, yyyy")</p>
+            </div>
+        </div>
+
+        <hr class="my-5 border-gray-300" />
+
+    }
+    <div id="blogContent"></div>
+</MudContainer>
+
+<style>
+    .profile-picture {
+    width: 75px; /* Adjust the size as needed */
+    height: 75px; /* Make it a square */
+    border-radius: 50%; /* Make it circular */
+    object-fit: cover; /* Ensure the image fits within the circle */
+    border: 2px solid #ddd; /* Optional: Add a border */
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.2); /* Optional: Add a shadow */
+    }
+</style>
+
+@code {
+    [Parameter] public string blogId { get; set; }
+    WiseBlog.Shared.Models.Blog BlogResponse;
+    string imageDataUrl = "";
+    WiseBlog.Shared.Models.Profile AuthProfile;
+    string RelationStatus;
+
+    string apiBaseUrl = "https://localhost:7289";
+
+    protected override async Task OnInitializedAsync()
+    {
+        BlogResponse = await Http.GetFromJsonAsync<WiseBlog.Shared.Models.Blog>($"{apiBaseUrl}/api/Blog/GetBlog/{blogId}");
+        var ContentResponse = await Http.GetStringAsync($"{apiBaseUrl}/api/Blog/GetContent/{BlogResponse.contentId}");
+        await JSRuntime.InvokeVoidAsync("setBlogContent", ContentResponse);
+
+        var imageString = await Http.GetStringAsync($"{apiBaseUrl}/api/Profile/GetProfileImage/{BlogResponse.userId}");
+        imageDataUrl = $"data:image/png;base64,{imageString}";
+
+        var authuser = ((AuthenticationProvider)Auth).User;
+        var url = $"{apiBaseUrl}/api/Profile?userId={authuser.id}";
+        AuthProfile = await Http.GetFromJsonAsync<WiseBlog.Shared.Models.Profile>(url);
+        Console.WriteLine(AuthProfile.name);
+
+        if (AuthProfile.following.Contains(BlogResponse.userId)) { RelationStatus = "Following"; }
+        else { RelationStatus = "Follow"; }
+        GetButtonClass();
+
+        // Navigation.LocationChanged += OnLocationChanged;
+        StateHasChanged();
+    }
+
+
+
+    public string GetButtonClass() {
+        if (RelationStatus == "Follow")
+            return "fs-5 text-success text-decoration-none border-0 bg-transparent";
+        else
+            return "fs-5 text-secondary text-decoration-none border-0 bg-transparent";
+    }
+
+    private async Task ToggleRelation() {
+        var request = new FollowRequest { UserId = AuthProfile.userId, BlogUserId = BlogResponse.userId };
+
+        if (RelationStatus == "Follow") {
+            RelationStatus = "Following";
+            request.ToFollow = true;
+            var response = await Http.PostAsJsonAsync($"{apiBaseUrl}/api/Profile/ToggleFollow", request);
+            if (response.IsSuccessStatusCode)
+            {
+                // var result = await response.Content.ReadFromJsonAsync<dynamic>();
+                // Console.WriteLine($"Relationship Result: {result}");
+            }
+        }
+        else {
+            RelationStatus = "Follow";
+            request.ToFollow = false;
+            var response = await Http.PostAsJsonAsync($"{apiBaseUrl}/api/Profile/ToggleFollow", request);
+            if (response.IsSuccessStatusCode)
+            {
+                // var result = await response.Content.ReadFromJsonAsync<dynamic>();
+                // Console.WriteLine($"Relationship Result: {result}");
+            }
+        }
+    }
+
+    private void NavToProfile()
+    {
+        Nav.NavigateTo($"/profile?id={BlogResponse?.userId}");
+    }
+}

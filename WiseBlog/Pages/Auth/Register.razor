@@ -9,7 +9,9 @@
 @using System.Security.Claims
 @inject IJSRuntime _jsRuntime
 @inject AuthenticationStateProvider Auth
-@* @inject MongoDBService MongoService *@
+@inject HttpClient Http
+@using Microsoft.AspNetCore.WebUtilities;
+
 
 <MudContainer MaxWidth="MaxWidth.Small" Class="pt-lg-5 mt-20">
     <MudCard>
@@ -19,19 +21,19 @@
         <MudCardContent>
             <MudForm @ref="form" @bind-IsValid="@success">
                 <MudTextField @bind-Value="username" Label="Username" Required="true"
-                              RequiredError="Username is required!" />
+                RequiredError="Username is required!" />
                 <MudTextField @bind-Value="email" Label="Email" Required="true"
-                              RequiredError="Email is required!" InputType="InputType.Email" />
+                RequiredError="Email is required!" InputType="InputType.Email" />
                 <MudTextField @bind-Value="password" Label="Password" Required="true"
-                              RequiredError="Password is required!" InputType="InputType.Password" />
+                RequiredError="Password is required!" InputType="InputType.Password" />
                 <MudTextField @bind-Value="confirmPassword" Label="Confirm Password" Required="true"
-                              RequiredError="Password confirmation is required!" InputType="InputType.Password" />
+                RequiredError="Password confirmation is required!" InputType="InputType.Password" />
 
                 <!-- New fields for Bio and Profile Image -->
                 <MudTextField @bind-Value="bio" Label="Bio" Required="true"
-                              RequiredError="Bio is required!" Multiline="true" Lines="3" MaxLines="5" />
+                RequiredError="Bio is required!" Multiline="true" Lines="3" MaxLines="5" />
 
-                <MudFileUpload T="IBrowserFile" FilesChanged="UploadFiles" MaximumFileCount="1" Required="true" RequiredError="Upload Profile Image">
+                <MudFileUpload T="IBrowserFile" FilesChanged="UploadFiles" MaximumFileCount="1" Accept="image/*" Required="true" RequiredError="Upload Profile Image">
                     <ActivatorContent>
                         <MudButton class="mt-3" Variant="Variant.Outlined" Color="Color.Primary" StartIcon="@Icons.Material.Filled.CloudUpload">
                             Upload Profile Image
@@ -48,7 +50,7 @@
                 Sigin?
             </MudButton>
             <MudButton ButtonType="ButtonType.Button" Variant="Variant.Filled" Color="Color.Primary"
-                       Class="ml-auto" OnClick="HandleRegister" Disabled="@(isLoading)">Register</MudButton>
+            Class="ml-auto" OnClick="HandleRegister" Disabled="@(isLoading)">Register</MudButton>
         </MudCardActions>
     </MudCard>
 </MudContainer>
@@ -95,23 +97,83 @@
     private async Task HandleRegister()
     {
         isLoading = true;
+
+        Snackbar.Add("Registering Please Wait...", Severity.Info, options =>
+            {
+                options.RequireInteraction = true; // Prevent auto-dismiss
+            });
+
         if (password != confirmPassword)
         {
+            Snackbar.Clear();
             Snackbar.Add("Passwords do not match", Severity.Error);
             return;
         }
         try
         {
             var RegisterResult = await supabaseService.RegisterUser(email, password, username);
-            Console.WriteLine("Supabase Register: " + RegisterResult);
+            string? RegisteredID = RegisterResult.Id;
+            string? RegisteredName = RegisterResult.Name;
+            Console.WriteLine($"Supabase Register: {RegisteredName} with {RegisteredID}");
 
-            // MongoService.RegisterProfile(RegisterResult, bio, image);
+            if (RegisteredID == null) { 
+                Snackbar.Clear(); 
+                return; 
+            }
 
+            var imageBase64 = Convert.ToBase64String(image);
+
+            var apiBaseUrl = "https://localhost:7289";
+        //     var url = QueryHelpers.AddQueryString($"{apiBaseUrl}/api/Profile", new Dictionary<string, string?>
+        // {
+        //     { "id", RegisteredID },
+        //     { "name", RegisteredName },
+        //     { "image", imageBase64 },
+        //     { "bio", bio }
+        // });
+        //     Console.WriteLine("API URL: " + url);
+
+        //     var response = await Http.GetAsync(url);
+            var profileRequest = new Profile
+            {
+                userId = RegisteredID,
+                name = RegisteredName,
+                image = imageBase64, // Encode the image as Base64
+                bio = bio,
+                following = new List<string>(),
+                followers = new List<string>()
+            };
+
+            var response = await Http.PostAsJsonAsync($"{apiBaseUrl}/api/Profile", profileRequest);
+
+            Console.WriteLine("API response: " + response);
+
+            if (response.IsSuccessStatusCode)
+            {
+                var profile = await response.Content.ReadFromJsonAsync<Profile>();
+                if (profile != null)
+                {
+                    Console.WriteLine($"Profile Registered: {profile.name}"); 
+                    byte[] imageBytes = Convert.FromBase64String(profile.image);
+                    Console.WriteLine($"Profile Registered: {imageBytes}"); 
+                }
+                else
+                {
+                    Console.WriteLine("Failed to register profile: " + response.ReasonPhrase);
+                }
+            }
+            else
+            {
+                var errorMessage = await response.Content.ReadAsStringAsync();
+                Console.WriteLine($"Error: {errorMessage}");
+            }
+            Snackbar.Clear();
             Snackbar.Add("Registration successful!", Severity.Success);
             NavigationManager.NavigateTo("/login");
         }
         catch (Exception ex)
         {
+            Snackbar.Clear();
             Snackbar.Add($"Registration failed: {ex.Message}", Severity.Error);
         }
         isLoading = false;

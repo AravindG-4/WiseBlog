@@ -1,0 +1,70 @@
+﻿@page "/blogs"
+@inject HttpClient Http
+@inject NavigationManager Navigation
+@using WiseBlog.Shared.Models
+<PageTitle>All Blogs</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Medium" Class="pt-lg-5 mt-10">
+    <h1 class="text-3xl font-bold pb-5">For You</h1>
+
+    @if (blogs == null)
+    {
+        <p class="text-gray-500">Loading...</p>
+    }
+    else if (!blogs.Any())
+    {
+        <p class="text-gray-500">No blogs found.</p>
+    }
+    else
+    {
+        <div class="space-y-8">
+            @foreach (var blog in blogs)
+            {
+                <div class="flex flex-col md:flex-row items-start gap-6 border-b pb-6">
+                    <!-- Blog Content -->
+                    <div class="flex-1">
+                        <h2 class="text-xl mt-2 font-semibold text-gray-900 hover:underline cursor-pointer"
+                        @onclick="() => Nav(blog.Id)">
+                            @blog.title
+                        </h2>
+                        <p class="text-gray-600 mt-2"><strong>Category:  </strong> @blog.category <strong class="p-2">Visibility:</strong>@blog.visibility</p>
+                        <p class="text-gray-600 mt-2">@blog.description</p>
+                        <p class="text-sm text-gray-400 mt-2">
+                            <strong>Uploaded: </strong>@blog.created_at.ToString("MMM dd, yyyy h:mm tt")
+                        </p>
+                        <p class="text-sm text-gray-400 mt-2">
+                            <strong>Created By: </strong>@blog.userName
+                        </p>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</MudContainer>
+
+@code {
+    private List<WiseBlog.Shared.Models.Blog> blogs;
+
+    string apiBaseUrl = "https://localhost:7289";
+
+    protected override async Task OnInitializedAsync()
+    {
+        blogs = await Http.GetFromJsonAsync<List<WiseBlog.Shared.Models.Blog>>($"{apiBaseUrl}/api/Blog/GetAllBlogs");
+    }
+
+    public void Nav(string blogId){
+        Navigation.NavigateTo($"/blog/{blogId}");
+    }
+
+    // public async Task<string> GetProfileImage(string userId){
+    //     Console.WriteLine(userId);
+    //     var url = $"{apiBaseUrl}/api/Profile/GetProfileImage/{userId}";
+    //     var image = await Http.GetStringAsync(url);
+    //     Console.WriteLine(AuthProfile.name);
+    //     var imageDataUrl = $"data:image/png;base64,{image}";
+    //     var imageString = await Http.GetStringAsync($"{apiBaseUrl}/api/Blog/GetProfileImage/{userId}");
+    //     var imageDataUrl = $"data:image/png;base64,{imageString}";
+    //     Console.WriteLine(userId);
+    //     return imageDataUrl;
+    // }
+}
