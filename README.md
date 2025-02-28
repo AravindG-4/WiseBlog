@@ -56,6 +56,7 @@ A feature-rich blogging platform built with **.NET**, **Blazor WebAssembly**, **
 ```sh
 git clone https://github.com/AravindG-4/WiseBlog.git
 cd WiseBlog
+
 2️⃣ Configure Environment Variables
 Create an appsettings.json file inside the Server project and add the following:
 
@@ -77,6 +78,7 @@ Create an appsettings.json file inside the Server project and add the following:
     "Audience": "your-app-users"
   }
 }
+
 3️⃣ Build & Run the Application
 Backend (ASP.NET Core API)
 
@@ -86,6 +88,7 @@ Frontend (Blazor WebAssembly)
 
 cd Client
 dotnet run
+
 The application will be available at:
 👉 Frontend: http://localhost:7166
 👉 Backend API: http://localhost:7289
