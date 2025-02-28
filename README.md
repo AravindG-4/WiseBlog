@@ -53,7 +53,7 @@ A feature-rich blogging platform built with **.NET**, **Blazor WebAssembly**, **
 - [Supabase Account](https://supabase.com/)  
 
 1️⃣ Clone the Repository
-```sh
+
 git clone https://github.com/AravindG-4/WiseBlog.git
 cd WiseBlog
 
