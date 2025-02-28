@@ -99,7 +99,7 @@ public class UserContext : ComponentBase
         if (token == null) { return false; }
         Console.WriteLine("Token Created: " + token);
         var updatedToken = await ModifyTokenRole(token, user.role ?? "user");
-        await WriteCookie("auth_token", updatedToken, 60);
+        await WriteCookie("auth_token", updatedToken, 1440);
         Auth.SetUser(user);
         Console.WriteLine("user set");
         return true;
