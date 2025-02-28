@@ -7,40 +7,71 @@
 @implements IAsyncDisposable
 @inject ISnackbar Snackbar
 @inject AuthenticationStateProvider Auth
+@inject MistralService MistralService
+@using Markdig
+
+<MudContainer MaxWidth="MaxWidth.Medium" Class="d-flex flex-column align-items-center pt-5 mt-10">
+    <!-- Blog Form Card -->
+    <MudCard Class="d-flex flex-row align-items-stretch shadow-lg rounded-lg overflow-hidden w-100"
+             Style="max-height: 460px; width: 100%; margin-bottom: 40px;">
+
+        <!-- Left: Form Section -->
+        <MudPaper Class="p-5 flex-grow-1 d-flex flex-column justify-content-center"
+                  Style="min-width: 55%;">
+
+            <h1 class="mb-3">Write Your Blog</h1>
+
+            <MudTextField @bind-Value="Title" Label="Blog Title" Variant="Variant.Outlined" Required="true" Class="mb-3" />
+
+            <MudTextField @bind-Value="Description" Label="Short Description" Variant="Variant.Outlined" Required="true" Class="mb-3" />
+
+            <!-- Dropdowns in a Row -->
+            <div class="d-flex gap-3">
+
+                <MudSelect T="string" Class="mt-1" Style="flex-shrink: 0; width: 120px;" Variant="Variant.Outlined" Label="Visibility" ValueChanged="AddVisibility">
+                    <MudSelectItem T="string" Value="@("Public")">Public</MudSelectItem>
+                    <MudSelectItem T="string" Value="@("Private")">Private</MudSelectItem>
+                    <MudSelectItem T="string" Value="@("Followers")">Followers</MudSelectItem>
+                </MudSelect>
+
+                <MudSelect T="string" Class="mt-1" Style="flex-shrink: 0; width: 120px;" Variant="Variant.Outlined" Label="Category" ValueChanged="AddCategory">
+                    <MudSelectItem T="string" Value="@("Technology")">Technology</MudSelectItem>
+                    <MudSelectItem T="string" Value="@("Lifestyle")">Lifestyle</MudSelectItem>
+                    <MudSelectItem T="string" Value="@("HealthCare")">HealthCare</MudSelectItem>
+                </MudSelect>
+            </div>
+
+        </MudPaper>
+
+        <!-- Right: Image Section -->
+        <MudPaper Class="d-none d-md-flex flex-column align-items-center justify-content-between bg-gray-200 p-4"
+                  Style="min-width: 45%;">
+
+            <h3 class="mb-3 mt-3 text-center">Get Your Blog Done By AI!</h3>
+            <p class="text-center">For your title and description!</p>
+
+            <img src="/writeBlog.webp" alt="AI Assistance" class="w-75 h-auto object-cover rounded-lg">
+
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" Class="mt-4" OnClick="GenerateBlog" Disabled="@isLoading">
+                Generate Blog
+            </MudButton>
+
+        </MudPaper>
 
 
-<MudContainer MaxWidth="MaxWidth.Small" Class="pt-lg-5 mt-20">
-    <h1 class="mb-3">Write Your Blog</h1>
+    </MudCard>
 
-    <!-- Title Input -->
-    <MudTextField @bind-Value="Title" Label="Blog Title" Variant="Variant.Outlined" Required="true" Class="mb-3" />
+    <!-- Blog Content Section -->
+    <div class="w-100 p-2">
+        <h3>Blog Content</h3>
+        <div id="editor" @ref="editorRef" class="border rounded p-3" Style="min-height: 250px;"></div>
 
-    <!-- Description Input -->
-    <MudTextField @bind-Value="Description" Label="Short Description" Variant="Variant.Outlined" Required="true" Class="mb-3" />
-
-    <!-- Visibility Dropdown -->
-    <MudSelect T="string" Class="mt-1 mb-3" Style="flex-shrink: 0; width: 120px;" Variant="Variant.Outlined" Label="Visibility" ValueChanged="AddVisibility">
-        <MudSelectItem T="string" Value="@("Public")">Public</MudSelectItem>
-        <MudSelectItem T="string" Value="@("Private")">Private</MudSelectItem>
-        <MudSelectItem T="string" Value="@("Followers")">Followers</MudSelectItem>
-    </MudSelect>
-
-    <!-- Category Dropdown -->
-    @* <MudSelect @bind-Value="SelectedCategory" Label="Category" Variant="Variant.Outlined" Required="true" Class="mb-3"> *@
-        <MudSelect T="string" Class="mt-1 mb-3" Style="flex-shrink: 0; width: 120px;" Variant="Variant.Outlined" Label="Category" ValueChanged="AddCategory">
-        <MudSelectItem T="string" Value="@("Technology")">Technology</MudSelectItem>
-        <MudSelectItem T="string" Value="@("Lifestyle")">Lifestyle</MudSelectItem>
-        <MudSelectItem T="string" Value="@("HealthCare")">HealthCare</MudSelectItem>
-    </MudSelect>
-
-    <!-- Blog Content -->
-    <h3>Blog Content</h3>
-    <div id="editor" @ref="editorRef"></div>
-
-    <!-- Save Button -->
-    <MudButton Class="mt-3 mb-3" OnClick="SaveContent" Variant="Variant.Filled" Color="Color.Primary">Save Blog</MudButton>
+        <!-- Save Button -->
+        <div class="d-flex justify-content-end mt-3">
+            <MudButton OnClick="SaveContent" Variant="Variant.Filled" Color="Color.Primary">Save Blog</MudButton>
+        </div>
+    </div>
 </MudContainer>
-
 
 
 @code {
@@ -113,6 +144,26 @@
         await CleanupQuill();
     }
 
+    private async Task GenerateBlog() {
+        isLoading = true;
+        if (String.IsNullOrEmpty(Title) && String.IsNullOrEmpty(Description)) {
+            Snackbar.Add("Add Title and Description to generate blog content", Severity.Error);
+            isLoading = false;
+            return;
+        }
+
+        var prompt = $"Imagine yourself as Blog writter. Your role is to help the user to write a simple small size blog for the given title and description given by the user. Title: {Title}\nDescription: {Description}.\nNote: Give the blog content as a markup string without any unnecessary information.";
+        Snackbar.Add("Writing the Blog...", Severity.Info, options =>
+            {
+                options.RequireInteraction = true; // Prevent auto-dismiss
+            });
+        var AIContent = await MistralService.GenerateBlogAsync(prompt);
+        Snackbar.Clear();
+        Snackbar.Add("Generated Your Blog. Make your own changes!", Severity.Info);
+        await JSRuntime.InvokeAsync<string>("setQuillContent", quillInstance, AIContent);
+        isLoading = false;
+    }
+
     private async Task SaveContent()
     {
         isLoading = true;
@@ -130,17 +181,20 @@
             {
                 Snackbar.Clear();
                 Snackbar.Add("Title cannot be Empty!", Severity.Error);
+                isLoading = false;
                 return;
             }
 
             if (string.IsNullOrWhiteSpace(Description)){
                 Snackbar.Clear();
                 Snackbar.Add("Description cannot be Empty!", Severity.Error);
+                isLoading = false;
                 return;
             }
             if (string.IsNullOrWhiteSpace(content)){
                 Snackbar.Clear();
                 Snackbar.Add("Blog Content cannot be Empty!", Severity.Error);
+                isLoading = false;
                 return;
             }
 
@@ -162,5 +216,7 @@
             isLoading = false;
             Navigation.NavigateTo("/", replace:true);
         }
+        isLoading = false;
+
     }
 }

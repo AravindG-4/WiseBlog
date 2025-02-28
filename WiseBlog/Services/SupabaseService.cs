@@ -91,7 +91,7 @@ namespace WiseBlog.Services
                     .Filter("email", Operator.Equals, email)
                     .Get();
 
-                    // Check if any user was found
+                    
                     if (Response.Models != null && Response.Models.Any())
                     {
                         var user = Response.Models.First();

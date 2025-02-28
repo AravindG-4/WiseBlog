@@ -1,8 +1,14 @@
-﻿@page "/blog/{blogId}"
+﻿@page "/blog"
 @inject HttpClient Http
+@using Microsoft.AspNetCore.WebUtilities
+@using Markdig
 @inject NavigationManager Nav
 @inject AuthenticationStateProvider Auth
+@inject MistralService MistralService
 @inject IJSRuntime JSRuntime
+@inject ISnackbar Snackbar
+@inject IConfiguration Configuration
+
 <PageTitle>Blog</PageTitle>
 
 
@@ -19,10 +25,10 @@
                 <div class="d-flex align-items-center gap-4">
                     <h3 class="text-lg-center font-semibold m-0 cursor-pointer" onclick="@NavToProfile">@BlogResponse.userName</h3>
                     @if(AuthProfile.userId != BlogResponse.userId){
-                        <button id="Relation" class="@GetButtonClass()" onclick="@ToggleRelation">@RelationStatus</button>
+                        <button id="Relation" class="btn btn-outline-dark" style="@GetButtonClass()" onclick="@ToggleRelation">@RelationStatus</button>
                     }
                 </div>
-                <p class="text-sm text-gray-500">Published on @BlogResponse.created_at.ToString("MMM dd, yyyy")</p>
+                <p class="mt-2 text-sm text-gray-500">Published on @BlogResponse.created_at.ToString("MMM dd, yyyy")</p>
             </div>
         </div>
 
@@ -30,16 +36,32 @@
 
     }
     <div id="blogContent"></div>
+
+    @if (Summary == null)
+    {
+        <MudButton Disabled="@isResponding" OnClick="@GetSummary" Class="mb-5" Variant="Variant.Filled" Color="Color.Primary">Create AI-Powered Summary!</MudButton>
+    }
+    else
+    {
+        <div class="align-content-center">
+            <h2>Summary!</h2>
+            <p>@((MarkupString)Markdown.ToHtml(Summary))</p>
+        </div>
+        @if (SummarySaved == false) {
+            <MudButton OnClick="@SaveSummary" Class="mb-5" Variant="Variant.Outlined" Color="Color.Primary">Save Summary</MudButton>
+        }
+    }
+
 </MudContainer>
 
 <style>
     .profile-picture {
-    width: 75px; /* Adjust the size as needed */
-    height: 75px; /* Make it a square */
-    border-radius: 50%; /* Make it circular */
-    object-fit: cover; /* Ensure the image fits within the circle */
-    border: 2px solid #ddd; /* Optional: Add a border */
-    box-shadow: 0 0 5px rgba(0, 0, 0, 0.2); /* Optional: Add a shadow */
+    width: 75px; 
+    height: 75px;
+    border-radius: 50%; 
+    object-fit: cover; 
+    border: 2px solid #ddd; 
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.2); 
     }
 </style>
 
@@ -50,37 +72,94 @@
     WiseBlog.Shared.Models.Profile AuthProfile;
     string RelationStatus;
 
-    string apiBaseUrl = "https://localhost:7289";
+    private bool isResponding = false;
+    private bool SummarySaved = false;
+    private string? Summary = null;
+
+    string apiBaseUrl;
 
     protected override async Task OnInitializedAsync()
     {
-        BlogResponse = await Http.GetFromJsonAsync<WiseBlog.Shared.Models.Blog>($"{apiBaseUrl}/api/Blog/GetBlog/{blogId}");
-        var ContentResponse = await Http.GetStringAsync($"{apiBaseUrl}/api/Blog/GetContent/{BlogResponse.contentId}");
-        await JSRuntime.InvokeVoidAsync("setBlogContent", ContentResponse);
+        apiBaseUrl = Configuration["WEBAPI:ControllerURL"];
+        var uri = new Uri(Nav.Uri);
+        var query = QueryHelpers.ParseQuery(uri.Query);
+        if (query.TryGetValue("blogId", out var blogId))
+        {
+            if (String.IsNullOrEmpty(blogId))
+            {
+                AutoNavigate();
+            }
 
-        var imageString = await Http.GetStringAsync($"{apiBaseUrl}/api/Profile/GetProfileImage/{BlogResponse.userId}");
-        imageDataUrl = $"data:image/png;base64,{imageString}";
+            BlogResponse = await Http.GetFromJsonAsync<WiseBlog.Shared.Models.Blog>($"{apiBaseUrl}/api/Blog/GetBlog/{blogId}");
+            var ContentResponse = await Http.GetStringAsync($"{apiBaseUrl}/api/Blog/GetContent/{BlogResponse.contentId}");
+            await JSRuntime.InvokeVoidAsync("setBlogContent", ContentResponse);
 
-        var authuser = ((AuthenticationProvider)Auth).User;
-        var url = $"{apiBaseUrl}/api/Profile?userId={authuser.id}";
-        AuthProfile = await Http.GetFromJsonAsync<WiseBlog.Shared.Models.Profile>(url);
-        Console.WriteLine(AuthProfile.name);
+            var imageString = await Http.GetStringAsync($"{apiBaseUrl}/api/Profile/GetProfileImage/{BlogResponse.userId}");
+            imageDataUrl = $"data:image/png;base64,{imageString}";
 
-        if (AuthProfile.following.Contains(BlogResponse.userId)) { RelationStatus = "Following"; }
-        else { RelationStatus = "Follow"; }
-        GetButtonClass();
+            var authuser = ((AuthenticationProvider)Auth).User;
+            var url = $"{apiBaseUrl}/api/Profile?userId={authuser.id}";
+            AuthProfile = await Http.GetFromJsonAsync<WiseBlog.Shared.Models.Profile>(url);
+            Console.WriteLine(AuthProfile.name);
 
-        // Navigation.LocationChanged += OnLocationChanged;
+            if (AuthProfile.following.Contains(BlogResponse.userId)) { RelationStatus = "Following"; }
+            else { RelationStatus = "Follow"; }
+            GetButtonClass();
+
+            // Navigation.LocationChanged += OnLocationChanged;
+            StateHasChanged();
+        }
+        else
+        {
+            AutoNavigate();
+        }
+    }
+
+    private async Task GetSummary()
+    {
+        isResponding = true;
+        Snackbar.Add("Summarizing the Blog...", Severity.Info, options =>
+            {
+                options.RequireInteraction = true; // Prevent auto-dismiss
+            });
+        // await Task.Delay(5000);
+        var blogContent = await JSRuntime.InvokeAsync<string>("getBlogContent");
+        Console.WriteLine("Blog Content : " + blogContent);
+        var response = await MistralService.GenerateTextAsync($"Summarize the following Blog content : {blogContent}");
+        Console.WriteLine(response);
+        Summary = response;
+        // Summary = "Summarizing the Blog for you!";
+        Snackbar.Clear();
         StateHasChanged();
     }
 
+    public async Task SaveSummary()
+    {
+        SummarySaved = true;
+        var summary = new Summary
+        {
+            blogId = BlogResponse.Id,
+            userId = AuthProfile.userId,
+            userName = AuthProfile.name,
+            CreatorId = BlogResponse.userId,
+            CreatorName = BlogResponse.userName,
+            title = BlogResponse.title,
+            summary = Summary
+        };
+        var response = await Http.PostAsJsonAsync($"{apiBaseUrl}/api/Blog/SaveSummary", summary);
+        Snackbar.Add("Summary saved! Visit your profile to see!", Severity.Info);
+    }
 
+    public void AutoNavigate()
+    {
+        Nav.NavigateTo("/", replace: true);
+    }
 
     public string GetButtonClass() {
         if (RelationStatus == "Follow")
-            return "fs-5 text-success text-decoration-none border-0 bg-transparent";
+            return "border-radius: 50px; background-color: white; color: black;";
         else
-            return "fs-5 text-secondary text-decoration-none border-0 bg-transparent";
+            return "border-radius: 50px; color: white; background-color: black;";
     }
 
     private async Task ToggleRelation() {
@@ -92,7 +171,6 @@
             var response = await Http.PostAsJsonAsync($"{apiBaseUrl}/api/Profile/ToggleFollow", request);
             if (response.IsSuccessStatusCode)
             {
-                // var result = await response.Content.ReadFromJsonAsync<dynamic>();
                 // Console.WriteLine($"Relationship Result: {result}");
             }
         }
@@ -102,7 +180,6 @@
             var response = await Http.PostAsJsonAsync($"{apiBaseUrl}/api/Profile/ToggleFollow", request);
             if (response.IsSuccessStatusCode)
             {
-                // var result = await response.Content.ReadFromJsonAsync<dynamic>();
                 // Console.WriteLine($"Relationship Result: {result}");
             }
         }

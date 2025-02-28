@@ -20,23 +20,22 @@ namespace WiseBlog.Services
 {
     class AuthenticationProvider : AuthenticationStateProvider
     {
-        static private Secrets secrets { get; } = new Secrets();
         public User? User { get; private set; } = null;
 
         private readonly IJSRuntime _jsRuntime;
-        //private readonly IConfiguration _configuration;
+        private readonly IConfiguration _configuration;
         private readonly SupabaseService _supabaseService;
 
         private AuthenticationState? _cachedAuthState = null;
 
         public AuthenticationProvider(
         IJSRuntime jsRuntime,
-        //IConfiguration configuration,
+        IConfiguration configuration,
         SupabaseService supabaseService)
         {
             _jsRuntime = jsRuntime;
-            //_configuration = configuration;
-            _supabaseService= supabaseService;
+            _configuration = configuration;
+            _supabaseService = supabaseService;
         }
 
         public override async Task<AuthenticationState> GetAuthenticationStateAsync()
@@ -84,7 +83,7 @@ namespace WiseBlog.Services
             // Decode the JWT token and check validity.
             var tokenHandler = new JwtSecurityTokenHandler();
             JwtSecurityToken jwtToken;
-            var key = Encoding.ASCII.GetBytes(secrets.GetJWTKEY());
+            var key = Encoding.ASCII.GetBytes(_configuration["Jwt:Key"]);
 
             try
             {
@@ -93,9 +92,9 @@ namespace WiseBlog.Services
                     ValidateIssuerSigningKey = true,
                     IssuerSigningKey = new SymmetricSecurityKey(key),
                     ValidateIssuer = true,
-                    ValidIssuer = secrets.GetJWTISSUER(),
+                    ValidIssuer = _configuration["Jwt:Issuer"],
                     ValidateAudience = true,
-                    ValidAudience = secrets.GetJWTAUDIENCE(),
+                    ValidAudience = _configuration["Jwt:Audience"],
                     ValidateLifetime = true,
                     ClockSkew = TimeSpan.Zero
                 };

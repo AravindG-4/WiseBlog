@@ -13,18 +13,15 @@ namespace WiseBlog.Shared.Models
         public Guid id { get; set; } // Matches int8 in Supabase
 
         [Column("name")]
-        public string name { get; set; } = string.Empty; // User's username
+        public string name { get; set; } = string.Empty; 
 
         [Column("email")]
-        public string email { get; set; } = string.Empty; // User's email
+        public string email { get; set; } = string.Empty; 
 
         [Column("role")]
-        public string role { get; set; } = "user"; // User's role
+        public string role { get; set; } = "user"; 
 
         [Column("created_at")]
-        public DateTime created_at { get; set; } = DateTime.UtcNow; // Creation timestamp
-
-        //[Column("password")]
-        //public string PasswordHash { get; set; } = string.Empty; // Hashed password for authent // Default role
+        public DateTime created_at { get; set; } = DateTime.UtcNow; 
     }
 }

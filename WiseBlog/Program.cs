@@ -12,25 +12,21 @@ var builder = WebAssemblyHostBuilder.CreateDefault(args);
 
 builder.Services.AddMudServices();
 
-//builder.Services.AddSingleton<IConfiguration>(new ConfigurationBuilder()
-//    .SetBasePath(builder.HostEnvironment.BaseAddress)
-//    .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
-//    .Build());
-
-Secrets secrets = new Secrets();
+var configuration = builder.Configuration;
 
 var supabaseOptions = new Supabase.SupabaseOptions
 {
     AutoRefreshToken = true,
 };
-var supabaseUrl = secrets.GetSUPABASEURL();
-var supabaseKey = secrets.GetSUPABASEKEY();
+var supabaseUrl = configuration["Supabase:Url"];
+var supabaseKey = configuration["Supabase:Key"];
 var supabaseClient = new Supabase.Client(supabaseUrl, supabaseKey, supabaseOptions);
 
 builder.Services.AddSingleton(supabaseClient);
 //builder.Services.AddSingleton<MongoDBService>();
 builder.Services.AddSingleton<SupabaseService>();
 builder.Services.AddSingleton<UserContext>();
+builder.Services.AddScoped<MistralService>();
 builder.Services.AddSingleton<AuthenticationStateProvider, AuthenticationProvider>();
 builder.Services.AddAuthorizationCore();
 builder.Services.AddCascadingAuthenticationState();

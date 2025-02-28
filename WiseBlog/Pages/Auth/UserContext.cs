@@ -2,7 +2,6 @@
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.JSInterop;
 using BCrypt.Net;
-//using Isopoh.Cryptography.Argon2;
 using WiseBlog.Shared.Models;
 using WiseBlog.Services;
 using static Supabase.Postgrest.Constants;
@@ -89,12 +88,11 @@ public class UserContext : ComponentBase
     public async Task<bool> LoginAsync(string email, string password)
 
     {
-        // Check if the input is empty
+
         if (string.IsNullOrEmpty(email) || string.IsNullOrEmpty(password)) { return false; }
 
         var user = await supabaseService.GetUserByEmail(email);
 
-        // check if the user is Valid
         if (user == null) { return false; }
 
         var token = await supabaseService.LoginAsync(email, password);
