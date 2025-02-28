@@ -52,7 +52,7 @@ A feature-rich blogging platform built with **.NET**, **Blazor WebAssembly**, **
 - [MongoDB Atlas Account](https://www.mongodb.com/atlas/database)  
 - [Supabase Account](https://supabase.com/)  
 
-### **1️⃣ Clone the Repository**
+**1️⃣ Clone the Repository**
 ```sh
 git clone https://github.com/AravindG-4/WiseBlog.git
 cd WiseBlog
