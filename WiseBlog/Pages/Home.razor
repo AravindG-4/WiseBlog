@@ -1,4 +1,4 @@
-﻿@page "/"
+@page "/"
 @using WiseBlog.Services
 @using WiseBlog.Shared.Models
 @inject AuthenticationStateProvider Auth
@@ -11,7 +11,6 @@
     <Authorized>
 
         <MudContainer MaxWidth="MaxWidth.Medium" Class="pt-lg-5 mt-20 d-flex BlogCard">
-            <div class="w-8/12 pr-6">
                 @if (blogs == null)
                 {
                     <p class="text-gray-500">Loading...</p>
@@ -19,6 +18,7 @@
 
                 else
                 {
+                  <div class="w-8/12 pr-6">
                     <MudTabs Class="mb-lg-5">
                         <MudTabPanel Text="New Drops" Icon="@Icons.Material.Filled.NewReleases">
                             <div>
@@ -153,8 +153,8 @@
                             </div>
                         </MudTabPanel>
                     </MudTabs>
-                }
-            </div>
+                  </div>
+                
 
             <div class="w-4/12 bg-gray-100 rounded-lg shadow-md RSS" style="min-width: 350px;">
                 <h1 class="text-center mb-5 text-success">What's New?</h1>
@@ -212,6 +212,7 @@
                 }
 
             </div>
+            }
 
         </MudContainer>
 
