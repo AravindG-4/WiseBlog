@@ -1,4 +1,4 @@
-﻿@page "/write"
+@page "/write"
 @attribute [CustomAuthorize("user")]
 @inject IJSRuntime JSRuntime
 @inject HttpClient Http
@@ -8,6 +8,7 @@
 @inject ISnackbar Snackbar
 @inject AuthenticationStateProvider Auth
 @inject MistralService MistralService
+@inject IConfiguration Configuration
 @using Markdig
 
 <MudContainer MaxWidth="MaxWidth.Medium" Class="d-flex flex-column align-items-center pt-5 mt-10">
@@ -90,6 +91,7 @@
     bool quillInitialized = false;
 
     User? authuser;
+    string apiBaseUrl;
 
     private async Task AddVisibility(string value)
     {
@@ -103,6 +105,8 @@
 
     protected override void OnInitialized()
     {
+        apiBaseUrl = Configuration["WEBAPI:ControllerURL"];
+
         authuser = ((AuthenticationProvider)Auth).User;
         Console.WriteLine($"User: {authuser.name}");
         // Subscribe to navigation events
@@ -210,7 +214,7 @@
                 visibility = SelectedVisibility
             };
 
-            await JSRuntime.InvokeVoidAsync("uploadBlog", JsonSerializer.Serialize(blogData), content);
+            await JSRuntime.InvokeVoidAsync("uploadBlog", JsonSerializer.Serialize(blogData), content, apiBaseUrl);
             Snackbar.Clear();
             Snackbar.Add("Your Blog will be posted shortly! Try Refresh!", Severity.Info);
             isLoading = false;
